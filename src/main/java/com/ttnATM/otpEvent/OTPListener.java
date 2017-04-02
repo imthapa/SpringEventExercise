@@ -14,9 +14,9 @@ import java.util.Scanner;
 /**
  * Created by ishwar on 2/4/17.
  */
-public class OTPListener implements ApplicationListener<OTPEvent> {
+public class OTPListener {}//implements ApplicationListener<OTPEvent> {
 
-    @Autowired
+    /*@Autowired
     AtmDaoImpl atmDao;
 
     private static Logger logger = Logger.getLogger(OTPListener.class);
@@ -24,11 +24,11 @@ public class OTPListener implements ApplicationListener<OTPEvent> {
 
     @Override
     public void onApplicationEvent(OTPEvent event) {
-        if (event.getSource() instanceof ATM) {
+        if (event.getSource() instanceof OTP) {
             // OTP otp = (OTP)event.getSource();
-            ATM atm = (ATM) event.getSource();
+           // ATM atm = (ATM) event.getSource();
             long randomNum = (long) (Math.random() * 100000);
-            logger.info("your OTP is " + randomNum);
+            logger.info("your OTP is " + randomNum + "for pin change request.");
             System.out.println("please enter the otp received ");
 //             otp.setOptNumber(randomNum);
 //            Scanner scanner = new Scanner(System.in);
@@ -58,8 +58,10 @@ public class OTPListener implements ApplicationListener<OTPEvent> {
                 e.printStackTrace();
             }
 //                thread.start();
+            //otp verified
             if (randomNum == userInputOTP) {
-                atmDao.updatePin(atm);
+                //atmDao.updatePin(atm);
+                atmDao.updatePin(((OTP) event.getSource()).getId());
             } else {
                 logger.info("OOPS wrong otp!!!");
             }
@@ -68,5 +70,5 @@ public class OTPListener implements ApplicationListener<OTPEvent> {
 
     private long otpGetter() {
         return new Scanner(System.in).nextLong();
-    }
-}
+    }*/
+//}

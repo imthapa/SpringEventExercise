@@ -1,5 +1,6 @@
 package com.ttnATM;
 
+import com.ttnATM.otpEvent.OTP;
 import com.ttnATM.otpEvent.OTPEvent;
 import com.ttnATM.otpEvent.OTPPublisher;
 import com.ttnATM.smsEvents.*;
@@ -101,14 +102,16 @@ public class AtmDaoImpl implements AtmDao {
     //new pin would be asked by user
     public void pinChange(int id, int oldPin) {
         //finding the user whose pin is to be updated
-        ATM atm = findATM(id);
-
+      //  ATM atm = findATM(id);
+        OTP otp = new OTP();
+        otp.setId(id);
         //starting event for pin change
-        OTPEvent otpEvent = new OTPEvent(atm);
+        //OTPEvent otpEvent = new OTPEvent(atm);
+        OTPEvent otpEvent = new OTPEvent(otp);
 
         //publishing the event
-        otpPublisher.publish(otpEvent);
-
+        //otpPublisher.publish(otpEvent);
+        smsPublisher.publish(otpEvent);
     }
 
 
@@ -130,7 +133,8 @@ public class AtmDaoImpl implements AtmDao {
         return atm;
     }
 
-    public void updatePin(ATM atm){
+    public void updatePin(int id){
+        ATM atm = findATM(id);
         Scanner scanner = new Scanner(System.in);
         System.out.println("otp matched enter the new pin.(must be of 4 digit integer)");
         int newPin = scanner.nextInt();
