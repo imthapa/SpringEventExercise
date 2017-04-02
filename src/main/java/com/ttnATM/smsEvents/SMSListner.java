@@ -15,7 +15,7 @@ import java.util.Scanner;
  * Created by ishwar on 1/4/17.
  */
 public class SMSListner implements ApplicationListener<ApplicationEvent> {
-
+    static int counter = 0;
     @Autowired
     AtmDaoImpl atmDao;
 
@@ -27,26 +27,25 @@ public class SMSListner implements ApplicationListener<ApplicationEvent> {
     public void onApplicationEvent(ApplicationEvent event) {
         logger.debug("onApplicationEvent Listener");
         if (event.getSource() instanceof SMS) {
+            logger.debug("counter from smsdebit: " + ++counter);
             SMS sms = (SMS) event.getSource();
             if (event instanceof SMSEvent) {
                 logger.info("Dear Customer, You have made a Debit card transaction of INR " + sms.getAmountDebited() +
                         " on " + sms.getDate() + "\n, the net available balance in your Ac XXXXXXXXXX" + sms.getId() + " is INR " +
                         sms.getAmountLeft());
-            }
-            else if (event instanceof SMSEventFailure) {
+            } else if (event instanceof SMSEventFailure) {
                 logger.info("Dear Customer, You tried to make a Debit card transaction of INR " + sms.getAmountDebited() +
                         " on " + sms.getDate() + "\n, the net available balance in your Ac XXXXXXXXXX" + sms.getId() + " is INR " +
                         sms.getAmountLeft() + "." +
                         " Please try with amount less than balance left in account");
             }
-
-
         } else if (event.getSource() instanceof ATM) {
+            logger.debug("counter from mobileNumber: " + ++counter);
             logger.info("mobile Number successfully updated.");
-        } if (event.getSource() instanceof OTP) {
-
+        } else if (event.getSource() instanceof OTP) {
+            logger.debug("counter from otp : " + ++counter);
             long randomNum = (long) (Math.random() * 100000);
-            logger.info("your OTP is " + randomNum + "for pin change request.");
+            logger.info("your OTP is " + randomNum + " for pin change request.");
             System.out.println("please enter the otp received ");
 
             Thread thread1 = new Thread(new Runnable() {
@@ -68,8 +67,8 @@ public class SMSListner implements ApplicationListener<ApplicationEvent> {
             } else {
                 logger.info("OOPS wrong otp!!!");
             }
-        }
-        else {
+        } else {
+            logger.debug("counter from other : " + ++counter);
             logger.info(event.getClass());
             logger.info("event is not of type SMS or ATM!!!!");
         }

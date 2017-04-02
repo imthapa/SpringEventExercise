@@ -6,6 +6,7 @@ import com.ttnATM.otpEvent.OTPPublisher;
 import com.ttnATM.smsEvents.*;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -43,27 +44,17 @@ public class AtmDaoImpl implements AtmDao {
     public void setDataSource(DataSource dataSource) {
         logger.debug("hello from jdbcTemplate");
         jdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
-        //jdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
     }
 
     @Override
     public void withdrawl(int withdrawlAmount, int id) {
-//        String selectSql = "select * from ATM where id = :id";
-//        Map map = new HashMap();
-//        map.put("id", id);
-//        //  ATM atm = jdbcTemplate.queryForObject(selectSql,map);
-//        ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {     //new Object[]{id}
-//            @Override
-//            public ATM mapRow(ResultSet rs, int rowNum) throws SQLException {
-//                ATM atm1 = new ATM();
-//                atm1.setId(rs.getInt("id"));
-//                atm1.setBalance(rs.getDouble("balance"));
-//                atm1.setMobileNumber(rs.getString("mobileNumber"));
-//                atm1.setName(rs.getString("name"));
-//                return atm1;
-//            }
-//        });
         ATM atm = findATM(id);
+        if (atm == null) {
+            logger.info("sorry id doesn't match.");
+            //no event as atm is null so
+            //smsEventer(atm, withdrawlAmount, false);
+            return;
+        }
         logger.debug(atm);
         if (atm.getBalance() > 0 && atm.getBalance() > withdrawlAmount) {
             String updateSql = "update ATM set balance = balance - :withdrawlAmount where id = :id";
@@ -72,15 +63,54 @@ public class AtmDaoImpl implements AtmDao {
             map2.put("id", id);
             jdbcTemplate.update(updateSql, map2);
             atm.setBalance(atm.getBalance() - withdrawlAmount);
-            smsEvent(atm, withdrawlAmount, true);
+            smsEventer(atm, withdrawlAmount, true);
         } else {
-            smsEvent(atm, withdrawlAmount, false);
+            smsEventer(atm, withdrawlAmount, false);
         }
-
 
     }
 
-    private void smsEvent(ATM atm, int withdrawlAmount, boolean flag) {
+    //new pin would be asked by user
+    @Override
+    public void pinChange(int id, int oldPin) {
+        //finding the user whose pin is to be updated
+        ATM atm = findATM(id, oldPin);
+        if (atm == null) {
+            logger.info("sorry id or pin doesn't match.");
+            return;
+        }
+        OTP otp = new OTP();
+        otp.setId(id);
+        //starting event for pin change
+        //OTPEvent otpEvent = new OTPEvent(atm);
+        //OTPEvent otpEvent = new OTPEvent(otp);
+        SMSEvent smsEvent = new SMSEvent(otp);
+        //publishing the event
+        //otpPublisher.publish(otpEvent);
+        //smsPublisher.publish(otpEvent);
+        smsPublisher.publish(smsEvent);
+    }
+
+    @Override
+    public void changeMobileNumber(int id, String mobileNumber) {
+        ATM atm = findATM(id);
+        // int newPin = scanner.nextInt();
+        if (atm == null) {
+            logger.info("sorry id doesn't exist.");
+            return;
+        }
+        String updateSql = "update ATM set mobileNumber = :mobileNumber where id = :id";
+        Map map2 = new HashMap();
+        map2.put("mobileNumber", mobileNumber);
+        map2.put("id", id);
+        jdbcTemplate.update(updateSql, map2);
+
+        SMSEvent smsEvent = new SMSEvent(atm);
+        smsPublisher.publish(smsEvent);
+    }
+
+
+    private void smsEventer(ATM atm, int withdrawlAmount, boolean flag) {
 
         SMS sms = new SMS();
         sms.setAmountDebited(withdrawlAmount);
@@ -94,46 +124,60 @@ public class AtmDaoImpl implements AtmDao {
             SMSEventFailure smsEvent = new SMSEventFailure(sms);
             smsPublisher.publish(smsEvent);
         }
-
-
-    }
-
-    @Override
-    //new pin would be asked by user
-    public void pinChange(int id, int oldPin) {
-        //finding the user whose pin is to be updated
-      //  ATM atm = findATM(id);
-        OTP otp = new OTP();
-        otp.setId(id);
-        //starting event for pin change
-        //OTPEvent otpEvent = new OTPEvent(atm);
-        OTPEvent otpEvent = new OTPEvent(otp);
-
-        //publishing the event
-        //otpPublisher.publish(otpEvent);
-        smsPublisher.publish(otpEvent);
     }
 
 
-    private ATM findATM(int id){
+    private ATM findATM(int id) {
         String selectSql = "select * from ATM where id = :id";
         Map map = new HashMap();
         map.put("id", id);
-        ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {     //new Object[]{id}
-            @Override
-            public ATM mapRow(ResultSet rs, int rowNum) throws SQLException {
-                ATM atm1 = new ATM();
-                atm1.setId(rs.getInt("id"));
-                atm1.setBalance(rs.getDouble("balance"));
-                atm1.setMobileNumber(rs.getString("mobileNumber"));
-                atm1.setName(rs.getString("name"));
-                return atm1;
-            }
-        });
-        return atm;
+        try{
+            ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {     //new Object[]{id}
+                @Override
+                public ATM mapRow(ResultSet rs, int rowNum) throws SQLException {
+
+                    ATM atm1 = new ATM();
+                    atm1.setId(rs.getInt("id"));
+                    atm1.setBalance(rs.getDouble("balance"));
+                    atm1.setMobileNumber(rs.getString("mobileNumber"));
+                    atm1.setName(rs.getString("name"));
+                    return atm1;
+                }
+            });
+            return atm;
+        }catch (EmptyResultDataAccessException e){
+            return null;
+        }
+
     }
 
-    public void updatePin(int id){
+    private ATM findATM(int id, int pin) {
+        String selectSql = "select * from ATM where id = :id and pin = :pin";
+        Map map = new HashMap();
+        map.put("id", id);
+        map.put("pin", pin);
+        try {
+            ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {     //new Object[]{id}
+                @Override
+                public ATM mapRow(ResultSet rs, int rowNum) throws SQLException {
+                    if (rs == null) {
+                        return null;
+                    }
+                    ATM atm1 = new ATM();
+                    atm1.setId(rs.getInt("id"));
+                    atm1.setBalance(rs.getDouble("balance"));
+                    atm1.setMobileNumber(rs.getString("mobileNumber"));
+                    atm1.setName(rs.getString("name"));
+                    return atm1;
+                }
+            });
+            return atm;
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    public void updatePin(int id) {
         ATM atm = findATM(id);
         Scanner scanner = new Scanner(System.in);
         System.out.println("otp matched enter the new pin.(must be of 4 digit integer)");
@@ -142,23 +186,10 @@ public class AtmDaoImpl implements AtmDao {
         Map map2 = new HashMap();
         map2.put("newPin", newPin);
         map2.put("id", atm.getId());
-        map2.put("oldPin",atm.getPin());
+        map2.put("oldPin", atm.getPin());
         jdbcTemplate.update(updateSql, map2);
         logger.info("PIN successfully changed");
     }
 
-    @Override
-    public void changeMobileNumber(int id, String mobileNumber) {
-        ATM atm = findATM(id);
-       // int newPin = scanner.nextInt();
-        String updateSql = "update ATM set mobileNumber = :mobileNumber where id = :id";
-        Map map2 = new HashMap();
-        map2.put("mobileNumber", mobileNumber);
-        map2.put("id", id);
-        jdbcTemplate.update(updateSql, map2);
-
-        SMSEvent smsEvent = new SMSEvent(atm);
-        smsPublisher.publish(smsEvent);
-    }
 
 }
