@@ -15,25 +15,21 @@
     <bean id="employeeDao" class="com.EmployeeDaoImpl">
         <property name="dataSource" ref="dataSource"/>
     </bean>
-    <context:annotation-config />
-    <context:component-scan base-package="com.ttnATM" />
+    <context:annotation-config/>
+    <context:component-scan base-package="com.ttnATM"/>
     <!--<task:executor id="myexecutor" pool-size="5"/>-->
     <!--<task:annotation-driven executor="myexecutor"/>-->
 
-        <task:annotation-driven executor="myExecutor"/>
-        <task:executor id="myExecutor" pool-size="7-42" queue-capacity="11"/>
+    <task:annotation-driven executor="myExecutor"/>
+    <task:executor id="myExecutor" pool-size="7-42" queue-capacity="11"/>
 
-        <bean id="MyAsync" class="com.MyAsync"/>
+    <bean id="MyAsync" class="com.MyAsync"/>
 
     <bean id="AtmDaoImpl" class="com.ttnATM.AtmDaoImpl"/>
 
     <bean id="smspublisher" class="com.ttnATM.smsEvents.SMSPublisher"/>
     <bean id="smslistner" class="com.ttnATM.smsEvents.SMSListner"/>
-    <bean id="otppublisher" class="com.ttnATM.otpEvent.OTPPublisher"/>
-    <bean id="otplistner" class="com.ttnATM.otpEvent.OTPListener"/>
     <!--<bean id="smseventfailure" clacom.ttnATM.smsEventsntsents.SMSEventFailure"/>-->
-
-
-        <!--<bean id="exceptionHandler" class="com.EmployeeDaoImpl"/>-->
+    <!--<bean id="exceptionHandler" class="com.EmployeeDaoImpl"/>-->
 
 </beans>

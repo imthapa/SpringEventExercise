@@ -1,8 +1,6 @@
 package com.ttnATM;
 
-import com.ttnATM.otpEvent.OTP;
-import com.ttnATM.otpEvent.OTPEvent;
-import com.ttnATM.otpEvent.OTPPublisher;
+import com.ttnATM.smsEvents.OTP;
 import com.ttnATM.smsEvents.*;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +33,8 @@ public class AtmDaoImpl implements AtmDao {
 
     @Autowired
     SMSPublisher smsPublisher;
-    @Autowired
-    OTPPublisher otpPublisher;
+//    @Autowired
+//    OTPPublisher otpPublisher;
 
     private NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -132,17 +130,14 @@ public class AtmDaoImpl implements AtmDao {
         Map map = new HashMap();
         map.put("id", id);
         try{
-            ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {     //new Object[]{id}
-                @Override
-                public ATM mapRow(ResultSet rs, int rowNum) throws SQLException {
+            ATM atm = jdbcTemplate.queryForObject(selectSql, map, (RowMapper<ATM>) (rs, rowNum) -> {
 
-                    ATM atm1 = new ATM();
-                    atm1.setId(rs.getInt("id"));
-                    atm1.setBalance(rs.getDouble("balance"));
-                    atm1.setMobileNumber(rs.getString("mobileNumber"));
-                    atm1.setName(rs.getString("name"));
-                    return atm1;
-                }
+                ATM atm1 = new ATM();
+                atm1.setId(rs.getInt("id"));
+                atm1.setBalance(rs.getDouble("balance"));
+                atm1.setMobileNumber(rs.getString("mobileNumber"));
+                atm1.setName(rs.getString("name"));
+                return atm1;
             });
             return atm;
         }catch (EmptyResultDataAccessException e){
@@ -157,7 +152,7 @@ public class AtmDaoImpl implements AtmDao {
         map.put("id", id);
         map.put("pin", pin);
         try {
-            ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {     //new Object[]{id}
+            ATM atm = jdbcTemplate.queryForObject(selectSql, map, new RowMapper<ATM>() {
                 @Override
                 public ATM mapRow(ResultSet rs, int rowNum) throws SQLException {
                     if (rs == null) {

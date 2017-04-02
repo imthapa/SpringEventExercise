@@ -1,4 +1,4 @@
-package com.ttnATM.otpEvent;
+package com.ttnATM.smsEvents;
 
 /**
  * Created by ishwar on 2/4/17.
